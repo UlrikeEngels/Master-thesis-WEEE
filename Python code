@@ -1,0 +1,1399 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Extract the heading rows
+heading_rows = df.iloc[:2]
+
+# Save the heading rows to a new Excel file
+heading_rows.to_excel("Variables description.xlsx", index=False)
+files = [
+    "BEvitalise - Online focus laptops.xlsx",
+    "BEvitalise - Offline focus laptops.xlsx",
+    "BEvitalise - Offline laptops en GSMs.xlsx"
+]
+
+for file in files:
+    # Load the Excel file
+    df = pd.read_excel(file)
+    
+    # Remove the second row
+    df = df.drop(0)
+    
+    # Save the modified DataFrame to a new Excel file
+    new_filename = file.split('.')[0] + "_new.xlsx"
+    df.to_excel(new_filename, index=False)
+    
+del df
+# Load the Excel file
+file = "BEvitalise - Online laptops en GSMs.xlsx"
+df = pd.read_excel(file)
+
+# Remove the second row
+df = df.drop(0)
+
+#Question 'What is your highest degree of education that you completed' changed to '... or that you are completing' on 29/4/2024, 18:35
+for index, row in df.iloc[0:102].iterrows():
+    if row['Q29'] == 'Student':
+        if row['Q28'] == 'Secundair onderwijs':
+            df.at[index, 'Q28'] = 'Bachelor'
+        elif row['Q28'] == 'Bachelor':
+            df.at[index, 'Q28'] = 'Master'
+    elif row['Q29_6_TEXT']=='Werkstudent':
+        if row['Q28'] == 'Secundair onderwijs':
+            df.at[index, 'Q28'] = 'Bachelor'
+        elif row['Q28'] == 'Bachelor':
+            df.at[index, 'Q28'] = 'Master'
+        
+        
+    
+# Save the modified DataFrame to a new Excel file
+new_filename = file.split('.')[0] + "_new.xlsx"
+df.to_excel(new_filename, index=False)
+# List of file names
+file_names = [
+    "BEvitalise - Online focus laptops_new.xlsx",
+    "BEvitalise - Online laptops en GSMs_new.xlsx",
+    "BEvitalise - Offline focus laptops_new.xlsx",
+    "BEvitalise - Offline laptops en GSMs_new.xlsx"
+]
+
+# Read each Excel file into a DataFrame and store them in a list
+dfs = [pd.read_excel(file) for file in file_names]
+
+# Concatenate the DataFrames
+merged_df = pd.concat(dfs, ignore_index=True)
+
+# Save the merged DataFrame to a new Excel file
+merged_df.to_excel("BEvitalise WEEE_unprocessed data.xlsx", index=False)
+
+print("Merged Excel files saved successfully!")
+# Load the merged Excel file into a DataFrame
+unprocessed_df = pd.read_excel("BEvitalise WEEE_unprocessed data.xlsx")
+
+# Define filters for laptops and phones
+laptop_filter = unprocessed_df['LB1C1_1'].notna() | unprocessed_df['LB2C1_1'].notna()
+phone_filter = unprocessed_df['GB1C1_1'].notna() | unprocessed_df['GB2C1_1'].notna()
+
+# Filter the DataFrame for laptops and phones
+laptop_df = unprocessed_df[laptop_filter]
+phone_df = unprocessed_df[phone_filter]
+
+# Save the filtered DataFrames to new Excel files
+laptop_df.to_excel("BEvitalise Laptop_unprocessed.xlsx", index=False)
+phone_df.to_excel("BEvitalise Phone_unprocessed.xlsx", index=False)
+
+print("Documents saved successfully!")
+# Count total respondents in laptop_df
+total_laptop_respondents = laptop_df.shape[0]
+
+# Count total respondents in phone_df
+total_phone_respondents = phone_df.shape[0]
+
+print("Total respondents in laptop_df:", total_laptop_respondents)
+print("Total respondents in phone_df:", total_phone_respondents)
+#Prepare processed files in which data is cleaned (laptop_processed and phone_processed)
+# Read the Excel files
+phone_df = pd.read_excel("BEvitalise Phone_unprocessed.xlsx")
+laptop_df = pd.read_excel("BEvitalise Laptop_unprocessed.xlsx")
+
+# Save as CSV files
+phone_df.to_csv("BEvitalise Phone_unprocessed.csv", index=False)
+laptop_df.to_csv("BEvitalise Laptop_unprocessed.csv", index=False)
+""" Orignial copies of the data where no changes will be made """
+
+OG_P = pd.read_csv("BEvitalise Phone_unprocessed.csv") 
+OG_L = pd.read_csv("BEvitalise Laptop_unprocessed.csv")
+
+""" Data copies where changes wille be made """
+
+P = OG_P.copy()
+L = OG_L.copy()
+# Create a new column 'OG_Row' referring to the row in the original doc
+P['OG_Row'] = P.index + 2
+L['OG_Row'] = L.index + 2
+#%% Deleting unneccessary columns
+
+deleted = ['StartDate', 'Status', 'IPAddress', 'Progress','Finished', 'RecordedDate', 'RecipientLastName', 'RecipientFirstName',
+           'RecipientEmail', 'ExternalReference', 'LocationLatitude', 'LocationLongitude', 'DistributionChannel',
+           'UserLanguage']
+          
+
+P = P.drop(columns=deleted)
+L = L.drop(columns=deleted)
+del deleted
+#%% Creating a table with deletions based on planned factors
+
+data = {'L': [], 'P': []}
+
+mapping = {
+    'Niet akkoord om deel te nemen aan de vragenlijst': 'No',
+    'Nee, ik heb geen gsm of laptop': 'No',
+    'Neen, ik heb beide niet liggen': 'No',
+    'Neen, het was niet altijd duidelijk': 'No',
+    'Ik woon niet in België' : 'No'
+}
+
+P['Q2'] = P['Q2'].replace(mapping) #deelnemen aan studie
+L['Q2'] = L['Q2'].replace(mapping)
+P['Q22'] = P['Q22'].replace(mapping) #in bezit van gsm of laptop
+L['Q22'] = L['Q22'].replace(mapping)
+P['Q5'] = P['Q5'].replace(mapping) #oude gsm of laptop thuis liggen
+L['Q5'] = L['Q5'].replace(mapping)
+P['Q31'] = P['Q31'].replace(mapping) #keuzesets niet duidelijk
+L['Q31'] = L['Q31'].replace(mapping)
+P['Q27'] = P['Q27'].replace(mapping) #doesnt' live in belgium
+L['Q27'] = L['Q27'].replace(mapping)
+# People that speeded through the survey
+L['Duration (in seconds)'] = pd.to_numeric(L['Duration (in seconds)'], errors='coerce')
+P['Duration (in seconds)'] = pd.to_numeric(P['Duration (in seconds)'], errors='coerce')
+L_speeders_count = len(L[L['Duration (in seconds)'] < 300])
+P_speeders_count = len(P[P['Duration (in seconds)'] < 300])
+data['L'].append(L_speeders_count)
+data['P'].append(P_speeders_count)
+
+# People who did not consent to participate in the survey
+L_nietakkoord = len(L[L['Q2'] == 'No'])
+P_nietakkoord = len(P[P['Q2'] == 'No'])
+data['L'].append(L_nietakkoord)
+data['P'].append(P_nietakkoord)
+
+# People who don't have  laptop or phone
+L_geen_count = len(L[L['Q22'] == 'No'])
+P_geen_count = len(P[P['Q22'] == 'No'])
+data['L'].append(L_geen_count)
+data['P'].append(P_geen_count)
+
+# People who don't keep an old phone or laptop at home
+L_geenoud_count = len(L[L['Q5'] == 'No'])
+P_geenoud_count = len(P[P['Q5'] == 'No'])
+data['L'].append(L_geenoud_count)
+data['P'].append(P_geenoud_count)
+
+#People that didn't understand the choice experiment
+L_nietbegrepen_count = len(L[L['Q31'] == 'No'])
+P_nietbegrepen_count = len(P[P['Q31'] == 'No'])
+data['L'].append(L_nietbegrepen_count)
+data['P'].append(P_nietbegrepen_count)
+
+#People who don't live in Belgium
+L_nietBE_count = len(L[L['Q27'] == 'No'])
+P_nietBE_count = len(P[P['Q27'] == 'No'])
+data['L'].append(L_nietBE_count)
+data['P'].append(P_nietBE_count)
+# Creating the DataFrame
+table = pd.DataFrame(data)
+
+
+# Displaying the table
+print(table)
+del data, L_speeders_count, P_speeders_count, L_nietakkoord,P_nietakkoord, L_geen_count, P_geen_count, L_geenoud_count, P_geenoud_count, L_nietbegrepen_count, P_nietbegrepen_count, table, mapping
+#%% Deleting all useless instances
+
+# deleting speeders
+L = L[L['Duration (in seconds)'] >= 300]
+P = P[P['Duration (in seconds)'] >= 300]
+
+# deleting people who don't consent
+L = L[L['Q2'] != 'No']
+P = P[P['Q2'] != 'No']
+P = P.dropna(subset=['Q2'])
+L = L.dropna(subset=['Q2'])
+
+#deleting people who didn't understand
+L = L[L['Q31'] != 'No']
+P = P[P['Q31'] != 'No']
+P = P.dropna(subset=['Q31'])
+L = L.dropna(subset=['Q31'])
+
+#deleting people who don't live in Belgium
+L = L[L['Q27'] != 'No']
+P = P[P['Q27'] != 'No']
+P = P.dropna(subset=['Q27'])
+L = L.dropna(subset=['Q27'])
+
+L.reset_index(drop=True, inplace=True)
+P.reset_index(drop=True, inplace=True)
+
+total_valid_respondents_P = P.shape[0]
+total_valid_respondent_L = L.shape[0]
+
+print("Total valid responses P:", total_valid_respondents_P)
+print("Total valid responses L:", total_valid_respondent_L)
+#%% Creating a table with deletions & protest responses based on planned factors
+
+data = {'L': [], 'P': []}
+
+mapping = {
+    'Niet akkoord om deel te nemen aan de vragenlijst': 'No',
+    'Nee, ik heb geen gsm of laptop': 'No',
+    'Neen, ik heb beide niet liggen': 'No',
+    'Neen, het was niet altijd duidelijk': 'No',
+    'Ik woon niet in België' : 'No'
+}
+
+P['Q2'] = P['Q2'].replace(mapping) #deelnemen aan studie
+L['Q2'] = L['Q2'].replace(mapping)
+P['Q22'] = P['Q22'].replace(mapping) #in bezit van gsm of laptop
+L['Q22'] = L['Q22'].replace(mapping)
+P['Q5'] = P['Q5'].replace(mapping) #oude gsm of laptop thuis liggen
+L['Q5'] = L['Q5'].replace(mapping)
+P['Q31'] = P['Q31'].replace(mapping) #keuzesets niet duidelijk
+L['Q31'] = L['Q31'].replace(mapping)
+P['Q27'] = P['Q27'].replace(mapping) #doesnt' live in belgium
+L['Q27'] = L['Q27'].replace(mapping)
+#%% DEMOGRAPHICS
+#%% encoding postal codes
+""" Source: https://nl.wikipedia.org/wiki/Postcode """
+
+L['Q26'] = pd.to_numeric(L['Q26'], errors='coerce').fillna(0)
+L['Q26'] = L['Q26'].astype(int)
+
+P['Q26'] = pd.to_numeric(P['Q26'], errors='coerce').fillna(0)
+P['Q26'] = P['Q26'].astype(int)
+
+def categorize_postal(value):
+    value = int(value)
+    if 1000 <= value <= 1299:
+        return 'Brussels'
+    elif 1300 <= value <= 1499:
+        return 'Walloon Brabant'
+    elif 1500 <= value <= 1999 or 3000 <= value <= 3499:
+        return 'Flemish Brabant'
+    elif 2000 <= value <= 2999:
+        return 'Antwerp'
+    elif 3500 <= value <= 3999:
+        return 'Limburg'
+    elif 4000 <= value <= 4999:
+        return 'Liège'
+    elif 5000 <= value <= 5999:
+        return 'Namur'
+    elif 6000 <= value <= 6599 or 7000 <= value <= 7999:
+        return 'Hainaut'
+    elif 6600 <= value <= 6999:
+        return 'Luxembourg'
+    elif 8000 <= value <= 8999:
+        return 'West Flanders'
+    elif 9000 <= value <= 9999:
+        return 'East Flanders'
+    else:
+        return 'Unknown'
+L['Q26'] = L['Q26'].apply(categorize_postal)
+P['Q26'] = P['Q26'].apply(categorize_postal)
+
+
+# Display number of respondents per province for data file L
+print("Number of respondents per province for data file L:")
+print(L['Q26'].value_counts())
+
+
+# Display number of respondents per province for data file P
+print("\nNumber of respondents per province for data file P:")
+print(P['Q26'].value_counts())
+
+# Total number of respondents in data file L and P
+total_respondents_L = len(L)
+total_respondents_P = len(P)
+
+# Calculate relative frequency for data file L
+relative_frequency_L = (L['Q26'].value_counts() / total_respondents_L) * 100
+
+# Round relative frequency to whole numbers for data file L
+rounded_relative_frequency_L = relative_frequency_L.round()
+
+# Calculate relative frequency for data file P
+relative_frequency_P = (P['Q26'].value_counts() / total_respondents_P) * 100
+
+# Round relative frequency to whole numbers for data file P
+rounded_relative_frequency_P = relative_frequency_P.round()
+
+# Adjust rounded percentages for data file L
+adjustment_L = 100 - rounded_relative_frequency_L.sum()
+rounded_relative_frequency_L.iloc[0] += adjustment_L
+
+# Adjust rounded percentages for data file P
+adjustment_P = 100 - rounded_relative_frequency_P.sum()
+rounded_relative_frequency_P.iloc[0] += adjustment_P
+
+# Display rounded relative frequency of respondents per province for data file L
+print("Rounded relative frequency of respondents per province for data file L:")
+print(rounded_relative_frequency_L)
+
+# Display rounded relative frequency of respondents per province for data file P
+print("\nRounded relative frequency of respondents per province for data file P:")
+print(rounded_relative_frequency_P)
+#%% Preprocessing 'AGE' 
+
+
+
+""" Creating uniform values """
+
+L['Q24'].replace({'65+':'6','55-64 jaar': '5', '45-54 jaar': '4', '35-44 jaar': '3', '25-34 jaar': '2', '16-24 jaar': '1'}, inplace=True)
+P['Q24'].replace({'65+':'6','55-64 jaar': '5', '45-54 jaar': '4', '35-44 jaar': '3', '25-34 jaar': '2', '16-24 jaar': '1'}, inplace=True)
+
+# Display number of respondents per age for data file L
+print("Number of respondents per age for data file L:")
+print(L['Q24'].value_counts())
+
+
+# Display number of respondents per age for data file P
+print("\nNumber of respondents per age for data file P:")
+print(P['Q24'].value_counts())
+
+
+# Total number of respondents in data file L and P
+total_respondents_L = len(L)
+total_respondents_P = len(P)
+
+# Calculate relative frequency for data file L
+relative_frequency_L = (L['Q24'].value_counts() / total_respondents_L) * 100
+
+# Round relative frequency to whole numbers for data file L
+rounded_relative_frequency_L = relative_frequency_L.round()
+
+# Calculate relative frequency for data file P
+relative_frequency_P = (P['Q24'].value_counts() / total_respondents_P) * 100
+
+# Round relative frequency to whole numbers for data file P
+rounded_relative_frequency_P = relative_frequency_P.round()
+
+# Adjust rounded percentages for data file L
+adjustment_L = 100 - rounded_relative_frequency_L.sum()
+rounded_relative_frequency_L.iloc[0] += adjustment_L
+
+# Adjust rounded percentages for data file P
+adjustment_P = 100 - rounded_relative_frequency_P.sum()
+rounded_relative_frequency_P.iloc[0] += adjustment_P
+
+# Display rounded relative frequency of respondents per age for data file L
+print("Rounded relative frequency of respondents per age for data file L:")
+print(rounded_relative_frequency_L)
+
+# Display rounded relative frequency of respondents per age for data file P
+print("\nRounded relative frequency of respondents per age for data file P:")
+print(rounded_relative_frequency_P)
+#%% Preprocessing 'GENDER 
+# Display number of respondents per age for data file L
+print("Number of respondents per gender for data file L:")
+print(L['Q23'].value_counts())
+
+
+
+# Display number of respondents per age for data file P
+print("\nNumber of respondents per gender for data file P:")
+print(P['Q23'].value_counts())
+
+# Total number of respondents in data file L and P
+total_respondents_L = len(L)
+total_respondents_P = len(P)
+
+# Calculate relative frequency for data file L
+relative_frequency_L = (L['Q23'].value_counts() / total_respondents_L) * 100
+
+# Round relative frequency to whole numbers for data file L
+rounded_relative_frequency_L = relative_frequency_L.round()
+
+# Calculate relative frequency for data file P
+relative_frequency_P = (P['Q23'].value_counts() / total_respondents_P) * 100
+
+# Round relative frequency to whole numbers for data file P
+rounded_relative_frequency_P = relative_frequency_P.round()
+
+# Adjust rounded percentages for data file L
+adjustment_L = 100 - rounded_relative_frequency_L.sum()
+rounded_relative_frequency_L.iloc[0] += adjustment_L
+
+# Adjust rounded percentages for data file P
+adjustment_P = 100 - rounded_relative_frequency_P.sum()
+rounded_relative_frequency_P.iloc[0] += adjustment_P
+
+# Display rounded relative frequency of respondents per province for data file L
+print("Rounded relative frequency of respondents per province for data file L:")
+print(rounded_relative_frequency_L)
+
+# Display rounded relative frequency of respondents per province for data file P
+print("\nRounded relative frequency of respondents per province for data file P:")
+print(rounded_relative_frequency_P)
+#%% Preprocessing 'INCOME' 
+
+# Display number of respondents per age for data file L
+print("Number of respondents per income range for data file L:")
+print(L['Q94'].value_counts())
+
+# Display number of respondents per age for data file P
+print("Number of respondents per income range for data file P:")
+print(P['Q94'].value_counts())
+
+
+# Total number of respondents in data file L and P
+total_respondents_L = len(L)
+total_respondents_P = len(P)
+
+# Calculate relative frequency for data file L
+relative_frequency_L = (L['Q94'].value_counts() / total_respondents_L) * 100
+
+# Round relative frequency to whole numbers for data file L
+rounded_relative_frequency_L = relative_frequency_L.round()
+
+# Calculate relative frequency for data file P
+relative_frequency_P = (P['Q94'].value_counts() / total_respondents_P) * 100
+
+# Round relative frequency to whole numbers for data file P
+rounded_relative_frequency_P = relative_frequency_P.round()
+
+# Adjust rounded percentages for data file L
+adjustment_L = 100 - rounded_relative_frequency_L.sum()
+rounded_relative_frequency_L.iloc[0] += adjustment_L
+
+# Adjust rounded percentages for data file P
+adjustment_P = 100 - rounded_relative_frequency_P.sum()
+rounded_relative_frequency_P.iloc[0] += adjustment_P
+
+# Display rounded relative frequency of respondents per province for data file L
+print("Rounded relative frequency of respondents per province for data file L:")
+print(rounded_relative_frequency_L)
+
+# Display rounded relative frequency of respondents per province for data file P
+print("\nRounded relative frequency of respondents per province for data file P:")
+print(rounded_relative_frequency_P)
+#%% Preprocessing 'Profession' 
+
+# Display number of respondents per age for data file L
+print("Number of respondents per work status for data file L:")
+print(L['Q29'].value_counts())
+
+
+
+# Display number of respondents per age for data file P
+print("\nNumber of respondents per work status for data file P:")
+print(P['Q29'].value_counts())
+
+# Total number of respondents in data file L and P
+total_respondents_L = len(L)
+total_respondents_P = len(P)
+
+# Calculate relative frequency for data file L
+relative_frequency_L = (L['Q29'].value_counts() / total_respondents_L) * 100
+
+# Round relative frequency to whole numbers for data file L
+rounded_relative_frequency_L = relative_frequency_L.round()
+
+# Calculate relative frequency for data file P
+relative_frequency_P = (P['Q29'].value_counts() / total_respondents_P) * 100
+
+# Round relative frequency to whole numbers for data file P
+rounded_relative_frequency_P = relative_frequency_P.round()
+
+# Adjust rounded percentages for data file L
+adjustment_L = 100 - rounded_relative_frequency_L.sum()
+rounded_relative_frequency_L.iloc[0] += adjustment_L
+
+# Adjust rounded percentages for data file P
+adjustment_P = 100 - rounded_relative_frequency_P.sum()
+rounded_relative_frequency_P.iloc[0] += adjustment_P
+
+# Display rounded relative frequency of respondents per province for data file L
+print("Rounded relative frequency of respondents per province for data file L:")
+print(rounded_relative_frequency_L)
+
+# Display rounded relative frequency of respondents per province for data file P
+print("\nRounded relative frequency of respondents per province for data file P:")
+print(rounded_relative_frequency_P)
+#%% Preprocessing 'years in belgium' 
+
+# Display number of respondents per age for data file L
+print("Number of respondents per years in Belgium for data file L:")
+print(L['Q27'].value_counts())
+print("% of respondents per years in Belgium for data file L:")
+print((L['Q27'].value_counts()/len(L))*100)
+
+# Display number of respondents per age for data file P
+print("\nNumber of respondents per years in Belgium for data file P:")
+print(P['Q27'].value_counts())
+print("% of respondents per years in Belgium for data file P:")
+print((P['Q27'].value_counts()/len(P))*100)
+#%% Preprocessing 'LEVEL OF EDUCATION' 
+
+# Display number of respondents per age for data file L
+print("Number of respondents per level of education for data file L:")
+print(L['Q28'].value_counts())
+print("% of respondents per level of education for data file L:")
+print((L['Q28'].value_counts()/len(L))*100)
+
+# Display number of respondents per age for data file P
+print("Number of respondents per level of education for data file P:")
+print(P['Q28'].value_counts())
+print("% of respondents per level of education in Belgium for data file P:")
+print((P['Q28'].value_counts()/len(P))*100)
+#GENERAL QUESTIONS
+#Processing "most common disposal methods"
+answers = pd.concat([L['Q3_1'], L['Q3_2'], L['Q3_3'], L['Q3_4'], L['Q3_5'], L['Q3_6'],L['Q3_7'], L['Q3_8'],L['Q3_8_TEXT'],P['Q3_1'], P['Q3_2'], P['Q3_3'], P['Q3_4'], P['Q3_5'], P['Q3_6'],P['Q3_7'],P['Q3_8_TEXT'], P['Q3_8']])
+
+# Iterate over rows with non-null values in column 'Q3_8_TEXT'
+for index, value in L.loc[L['Q3_8_TEXT'].notnull(), 'Q3_8_TEXT'].items():
+    print("L OG Row:", L.loc[index, 'OG_Row'])
+    print(value)  
+    
+#L OG Row: 8
+#Ik geef dit terug aan mijn werkgever, die me dat materiaal schenkt => 'Other'
+#L OG Row: 58
+#Als je je oude iphone inruilt bij de aankoop van een nieuwe gaat er een deel van de prijs van de nieuwe gsm. => 'Buy-back program'
+# Replace the value in 'Q3_4'& Delete the values in 'Q3_8_TEXT' and 'Q3_8'
+L.loc[L[L['OG_Row'] == 58].index, 'Q3_5'] = "Ik lever het toestel in bij een elektronicawinkel met een inruilservice of 'buy-back'- programma"
+L.loc[L[L['OG_Row'] == 58].index, ['Q3_8_TEXT', 'Q3_8']] = None
+    
+# Iterate over rows with non-null values in column 'Q3_8_TEXT'
+for index, value in P.loc[P['Q3_8_TEXT'].notnull(), 'Q3_8_TEXT'].items():
+    print("P OG Row:", P.loc[index, 'OG_Row'])
+    print(value)
+    
+#P OG Row: 11
+#Oude laptop is in de winkel gebleven,  de oude gsm's liggen hier in een lade => 'Collection point' and 'Store at home'
+P.loc[P[P['OG_Row'] == 11].index, 'Q3_4'] = "Ik lever het toestel in bij een inzamelpunt (vb. recyclagepark, kringloopwinkel)"
+P.loc[P[P['OG_Row'] == 11].index, 'Q3_1'] = "Ik bewaar het toestel thuis"
+P.loc[P[P['OG_Row'] == 11].index, ['Q3_8_TEXT', 'Q3_8']] = None
+#P OG Row: 111
+#Actie met jbc om scholieren te helpen => 'Collection point'
+P.loc[P[P['OG_Row'] == 111].index, 'Q3_4'] = "Ik lever het toestel in bij een inzamelpunt (vb. recyclagepark, kringloopwinkel)"
+P.loc[P[P['OG_Row'] == 111].index, ['Q3_8_TEXT', 'Q3_8']] = None    
+    
+# Create DataFrame
+disposal = pd.concat([L['Q3_1'], L['Q3_2'], L['Q3_3'], L['Q3_4'], L['Q3_5'], L['Q3_6'],L['Q3_7'], L['Q3_8']])
+disposal_frequencies = disposal.value_counts()/len(L)*100
+
+print('L:', disposal_frequencies.round(1))
+
+
+# Create DataFrame
+disposal = pd.concat([P['Q3_1'], P['Q3_2'], P['Q3_3'], P['Q3_4'], P['Q3_5'], P['Q3_6'],P['Q3_7'], P['Q3_8']])
+disposal_frequencies = disposal.value_counts()/len(P)*100
+
+
+print('P:', disposal_frequencies.round(1))
+print(disposal_frequencies.index)
+#Percentage of respondents who keep an old phone/laptop at home
+answers = pd.concat([L['Q5'],P['Q5']])
+freq = answers.value_counts()/(len(L)+len(P))*100
+print(freq)
+#Processing "reasons for storage at home_laptop"
+
+# Assuming df is your DataFrame containing the columns Q8_1 to Q8_7
+# Concatenate the columns into a single Series
+answers = pd.concat([L['Q8_1'], L['Q8_2'], L['Q8_3'], L['Q8_4'], L['Q8_5'], L['Q8_6'],L['Q8_7'], L['Q8_8']])
+# Iterate over rows with non-null values in column 'Q8_7_TEXT'
+for index, value in L.loc[L['Q8_7_TEXT'].notnull(), 'Q8_7_TEXT'].items():
+    print("L OG Row:", L.loc[index, 'OG_Row'])
+    print(value) 
+    
+#L OG Row: 35
+#Voor het geval dat een familielid ooit het zou nodig hebben. => Spare
+L.loc[L[L['OG_Row'] == 35].index, 'Q8_1'] = "Ik bewaar de laptop als back-up voor het geval mijn huidige laptop defect is"
+L.loc[L[L['OG_Row'] == 35].index, ['Q8_7_TEXT', 'Q8_7']] = None
+#L OG Row: 59
+#Indien ik de computer zou willen verkopen, zou ik er niet veel geld voor krijgen
+#L OG Row: 69
+#Vervangstuk => Spare
+L.loc[L[L['OG_Row'] == 69].index, 'Q8_1'] = "Ik bewaar de laptop als back-up voor het geval mijn huidige laptop defect is"
+L.loc[L[L['OG_Row'] == 69].index, ['Q8_7_TEXT', 'Q8_7']] = None
+#L OG Row: 78
+#Oude software
+#L OG Row: 83
+#nog niet in inzamelpunt geraakt
+#L OG Row: 84
+#Ik moet ze nog inleveren. 
+#L OG Row: 103
+#Babyfoto's van me kindje => Data storage
+L.loc[L[L['OG_Row'] == 103].index, 'Q8_2'] = "Ik bewaar de laptop als back-up om gegevens (vb. foto's, documenten) op te slaan"
+L.loc[L[L['OG_Row'] == 103].index, ['Q8_7_TEXT', 'Q8_7']] = None
+#L OG Row: 110
+#Er staan nog programma’s op die nu niet meer voorhanden en ik regelmatig nodig heb 
+#L OG Row: 113
+#Kan nog dienen voor navigatie op mijn bootje.
+#L OG Row: 115
+#Moet eerst de mijn foto's nog kopiëren  => Data storage
+L.loc[L[L['OG_Row'] == 115].index, 'Q8_2'] = "Ik bewaar de laptop als back-up om gegevens (vb. foto's, documenten) op te slaan"
+L.loc[L[L['OG_Row'] == 115].index, ['Q8_7_TEXT', 'Q8_7']] = None
+
+#Create Dataframe
+storageL =pd.concat([L['Q8_1'], L['Q8_2'], L['Q8_3'], L['Q8_4'], L['Q8_5'], L['Q8_6'],L['Q8_7'], L['Q8_8']]).dropna()
+storageL_frequencies = storageL.value_counts()/len(L)*100
+SL = pd.DataFrame(storageL_frequencies.round(), columns=['Frequency'])
+print(storageL_frequencies.round(1))
+
+# Add 'Short answers' column
+short_storageL = [
+    'Spare','Data storage','Data security','Future sell','Unknown','Emotional attachment','Other','Unconscious']
+
+SL['Short answers_SL'] = short_storageL
+
+# Add 'Description full answers' column
+full_storageL = [
+    'I keep the laptop as a backup in case my current laptop is defective.',
+    'I keep the laptop as a backup to store data (e.g., photos, documents).',
+    'I am concerned about the security of my data on the laptop if I were to return it.',
+    'I want to sell the laptop in the future.',
+    'I don\'t know how/where to dispose of the laptop.',
+    'I am emotionally attached to the laptop.',
+    'Other.',
+    'I haven\'t consciously thought about this.']
+
+SL['Description full answers_SL'] = full_storageL
+
+# Save DataFrame to Excel
+SL.to_excel('Storage reasons L.xlsx', index=False)
+#Replacement rate
+replacement_P = P['Q20']
+replacement_L = L['Q12']
+print(replacement_P.value_counts()/len(P)*100)
+print(replacement_L.value_counts()/len(L)*100)
+#Processing "reasons for storage at home_phone"
+
+# Assuming df is your DataFrame containing the columns Q8_1 to Q8_7
+# Concatenate the columns into a single Series
+answers = pd.concat([P['Q16_1'], P['Q16_2'], P['Q16_3'], P['Q16_4'], P['Q16_5'], P['Q16_6'],P['Q16_7'],P['Q16_8']])
+
+# Iterate over rows with non-null values in column 'Q8_7_TEXT'
+for index, value in P.loc[P['Q16_7_TEXT'].notnull(), 'Q16_7_TEXT'].items():
+    print("P OG Row:", P.loc[index, 'OG_Row'])
+    print(value) 
+    
+#P OG Row: 3
+#Wacht op een interessant actie om hem binnen te brengen.
+#P OG Row: 20
+#Gemak => Unconscious
+P.loc[P[P['OG_Row'] == 20].index, 'Q16_8'] = "Ik heb me hier niet bewust mee bezig gehouden"
+P.loc[P[P['OG_Row'] == 20].index, ['Q16_7_TEXT', 'Q16_7']] = None
+#P OG Row: 72
+#De gsm zit vast achter een radiator.
+#P OG Row: 87
+#Speelgsm 
+#P OG Row: 90
+#Wordt gebruikt als wekker 
+#P OG Row: 98
+#Voor de kinderen om spelletjes op te spelen
+#P OG Row: 104
+#Is de enige GSM die compatibel is met een motorvoertuig endoscope.
+#P OG Row: 115
+#Kids spelen hier nog op
+#P OG Row: 137
+#Om te gebruiken bij toneel in de klas.
+#P OG Row: 139
+#Eigenlijk geen reden 
+#P OG Row: 140
+#Deze kan dienen als eerste gsm voor mijn dochter => Spare
+P.loc[P[P['OG_Row'] == 140].index, 'Q16_1'] = "Ik bewaar de gsm als back-up voor het geval mijn huidige gsm defect is"
+P.loc[P[P['OG_Row'] == 140].index, ['Q16_7_TEXT', 'Q16_7']] = None
+#P OG Row: 150
+#Voor de kinderen
+#P OG Row: 154
+#Zoek naar mogelijkheden om bestanden te recupereren => Data storage
+P.loc[P[P['OG_Row'] == 154].index, 'Q16_2'] = "Ik bewaar de gsm als back-up om gegevens (vb. foto's, documenten) op te slaan"
+P.loc[P[P['OG_Row'] == 154].index, ['Q16_7_TEXT', 'Q16_7']] = None
+#P OG Row: 187
+#Speelgoed voor kleinki nderenleï
+#P OG Row: 189
+#Soms and Anderson messenger in afrika
+
+# Create DataFrame
+storageP = pd.concat([P['Q16_1'], P['Q16_2'], P['Q16_3'], P['Q16_4'], P['Q16_5'], P['Q16_6'],P['Q16_7'],P['Q16_8']]).dropna()
+print(storageP.value_counts()/len(P)*100)
+storageP_frequencies = storageP.value_counts()/len(P)*100
+SP = pd.DataFrame(storageP_frequencies.round(), columns=['Frequency'])
+
+# Add 'Short answers' column
+short_storageP = [
+    'Spare','Data storage','Data security','Future sell','Unknown','Emotional attachment','Other','Unconscious']
+
+SP['Short answers_SP'] = short_storageP
+
+# Add 'Description full answers' column
+full_storageP = [
+    'I keep the phone as a backup in case my current laptop is defective.',
+    'I keep the phone as a backup to store data (e.g., photos, documents).',
+    'I am concerned about the security of my data on the phone if I were to return it.',
+    'I want to sell the phone in the future.',
+    'I don\'t know how/where to dispose of the phone.',
+    'I am emotionally attached to the phone.',
+    'Other.',
+    'I haven\'t consciously thought about this.']
+
+SP['Description full answers_SP'] = full_storageP
+
+# Save DataFrame to Excel
+SP.to_excel('Storage reasons P.xlsx', index=False)
+#Processing attributes non attendance
+#phone
+answers = pd.concat([P['Q34_1'], P['Q34_2'], P['Q34_3'], P['Q34_4'], P['Q34_5'], P['Q34_6']])
+#Relative frequencies
+answer_frequencies = answers.value_counts()/len(P)*100
+print("frequencies P:",answer_frequencies)
+
+# List to store counts for each condition
+counts = [0,0, 0, 0, 0, 0, 0]
+
+# Iterate over each row
+for index, row in P.iterrows():
+    # Count non-null values in each row
+    non_null_values = sum(1 for value in row[['Q34_1', 'Q34_2', 'Q34_3', 'Q34_4', 'Q34_5', 'Q34_6']] if pd.notnull(value))
+    
+    # Increment the respective count
+    if non_null_values == 0:
+        counts[0] += 1
+    if non_null_values == 1:
+        counts[1] += 1
+    if non_null_values == 2:
+        counts[2] += 1
+    if non_null_values == 3:
+        counts[3] += 1
+    if non_null_values == 4:
+        counts[4] += 1
+    if non_null_values == 5:
+        counts[5] += 1
+    if non_null_values == 6:
+        counts[6] += 1
+        
+        # Check if non_null_values >= 6 and print the value in 'OG_Row'
+    if non_null_values >= 6:
+        print("OG_Row value for respondent {}: {}".format(index, row['OG_Row']))
+
+# Print the counts
+percentages = [count / len(P) * 100 for count in counts]
+print("Phone: Percentages for at 0, 1, 2, 3, 4, 5, and 6 non-null values respectively:")
+print(percentages)
+print(counts)
+
+
+#laptop
+answers = pd.concat([L['Q34_1'], L['Q34_2'], L['Q34_3'], L['Q34_4'], L['Q34_5'], L['Q34_6']])
+#Relative frequencies
+answer_frequencies = answers.value_counts()/len(L)*100
+print("frequencies L:",answer_frequencies)
+
+# List to store counts for each condition
+counts = [0, 0, 0, 0, 0, 0, 0]
+
+# Iterate over each row
+for index, row in L.iterrows():
+    # Count non-null values in each row
+    non_null_values = sum(1 for value in row[['Q34_1', 'Q34_2', 'Q34_3', 'Q34_4', 'Q34_5', 'Q34_6']] if pd.notnull(value))
+    
+    # Increment the respective count
+    if non_null_values == 0:
+        counts[0] += 1
+    if non_null_values == 1:
+        counts[1] += 1
+    if non_null_values == 2:
+        counts[2] += 1
+    if non_null_values == 3:
+        counts[3] += 1
+    if non_null_values == 4:
+        counts[4] += 1
+    if non_null_values == 5:
+        counts[5] += 1
+    if non_null_values == 6:
+        counts[6] += 1
+
+# Print the counts
+percentages = [count / len(L) * 100 for count in counts]
+print("Laptop: Percentages for at 0,1, 2, 3, 4, 5, and 6 non-null values respectively:")
+print(percentages)
+#Processing "bought from employer"
+answers = pd.concat([L['Q7']])
+print("L:",answers.value_counts()/(len(L)-17)*100)
+answers = pd.concat([P['Q15']])
+print("P:",answers.value_counts()/(len(P)-21)*100)
+#Processing "condition of device"
+answers = pd.concat([L['Q6_1'],L['Q6_2'],L['Q6_3']])
+print("L:",answers.value_counts()/(len(L)-17)*100)
+answers = pd.concat([P['Q14_1'], P['Q14_2'],P['Q14_3']])
+print("P:",answers.value_counts()/(len(P)-21)*100)
+#Processing: people who chose status quo every time
+answers = pd.concat([L['Q30_1'],L['Q30_2'],L['Q30_3'],L['Q30_4'],L['Q30_5'],L['Q30_6']])
+print("L:", answers.value_counts())
+
+# Iterate over rows with non-null values in column 'Q30_6_TEXT'
+for index, value in L.loc[L['Q30_6_TEXT'].notnull(), 'Q30_6_TEXT'].items():
+    print("L OG Row:", L.loc[index, 'OG_Row'])
+    print(value) 
+    
+#L OG Row: 7
+#Ik geef geen toetellen mee waar personlijke data opstaat => 'Prefer to keep at home'
+L.loc[L[L['OG_Row'] == 7].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+L.loc[L[L['OG_Row'] == 7].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#L OG Row: 23
+#Ik hou het graag in bewaring => 'prefer to keep at home'
+L.loc[L[L['OG_Row'] == 23].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+L.loc[L[L['OG_Row'] == 23].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#L OG Row: 100
+#ik blijf bezorgd over de data die op de harde schijf kunnen blijven staan => 'prefer to keep at home'
+L.loc[L[L['OG_Row'] == 100].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+L.loc[L[L['OG_Row'] == 100].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#L OG Row: 106
+#omdat ik in mijn onmiddellijke omgeving de pc zelf kan weggeven aan een familielid of vriend die er nood aan heeft => 'prefer to keep at home'
+L.loc[L[L['OG_Row'] == 106].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+L.loc[L[L['OG_Row'] == 106].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#L OG Row: 117
+#Als ik de laptop niet meer nodig heb zal ik deze zelf vernietigen => 'prefer to keep at home'
+L.loc[L[L['OG_Row'] == 117].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+L.loc[L[L['OG_Row'] == 117].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#L OG Row: 128 => 'prefer to keep at home'
+#Gemak
+L.loc[L[L['OG_Row'] == 128].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+L.loc[L[L['OG_Row'] == 128].index, ['Q30_6_TEXT', 'Q30_6']] = None
+
+answers = pd.concat([P['Q30_1'],P['Q30_2'],P['Q30_3'],P['Q30_4'],P['Q30_5'],P['Q30_6']])
+print("P:",answers.value_counts())
+
+# Iterate over rows with non-null values in column 'Q30_6_TEXT'
+for index, value in P.loc[P['Q30_6_TEXT'].notnull(), 'Q30_6_TEXT'].items():
+    print("P OG Row:", P.loc[index, 'OG_Row'])
+    print(value) 
+
+#P OG Row: 47
+#Ik gooi niets weg, voor het geval dat...=> prefer to keep at home
+P.loc[P[P['OG_Row'] == 47].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 47].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 66
+#Ik vind het de moeite niet waard om voor een kleine compensatie de moeite te doen om mijn toestel binnen te brengen (dit lijkt nu heel stom van mij, maar als ik eerlijk ben is dit wel het meest oprecht antwoord; anders zou ik nu ook al mijn toestellen al ingeleverd hebben) => prefer to keep at home
+P.loc[P[P['OG_Row'] == 66].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 66].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 81
+#Indien toestel van gezinslid deffect. => prefer to keep at home
+P.loc[P[P['OG_Row'] == 81].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 81].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 127
+#Emotioneel => prefer to keep at home
+P.loc[P[P['OG_Row'] == 127].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 127].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 135
+#Voor het geval mijn gsm het begeeft dat ik een reserve heb => prefer to keep at home
+P.loc[P[P['OG_Row'] == 135].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 135].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 141
+#Om backup te hebben => prefer to keep at home
+P.loc[P[P['OG_Row'] == 141].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 141].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 201
+#Herinnering => prefer to keep at home
+P.loc[P[P['OG_Row'] == 201].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 201].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 210
+#Ik houd Allen wear persoonlijkegegevens op stain of heaven gestalt bij => prefer to keep at home
+P.loc[P[P['OG_Row'] == 210].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 210].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#P OG Row: 215
+#Doorgeven aan vriend, kennis => prefer to keep at home
+P.loc[P[P['OG_Row'] == 215].index, 'Q30_1'] = "Ik zou het liever thuis houden gezien de andere opties"
+P.loc[P[P['OG_Row'] == 215].index, ['Q30_6_TEXT', 'Q30_6']] = None
+#Preparing DCE dataframe for stata
+#%% Preprocessing of B1C1, ... , B2C6 columns
+
+""" Ensuring uniform values. Option A is changed to 1, option B is
+changed to 2, Geen van beide is changed to 3 """
+
+replacement_mapping = {
+    'Optie A': 1,
+    'Optie B': 2,
+    'Geen van beide': 3
+}
+
+columns_to_replace_L = ['LB1C1_1', 'LB1C2_1', 'LB1C3_1', 'LB1C4_1', 'LB1C5_1', 'LB1C6_1',
+                      'LB2C1_1', 'LB2C2_1', 'LB2C3_1', 'LB2C4_1', 'LB2C5_1', 'LB2C6_1']
+
+for column in columns_to_replace_L:
+    L[column] = L[column].replace(replacement_mapping)
+
+columns_to_replace_P = ['GB1C1_1', 'GB1C2_1', 'GB1C3_1', 'GB1C4_1', 'GB1C5_1', 'GB1C6_1',
+                      'GB2C1_1', 'GB2C2_1', 'GB2C3_1', 'GB2C4_1', 'GB2C5_1', 'GB2C6_1']
+    
+    
+for column in columns_to_replace_P:
+    P[column] = P[column].replace(replacement_mapping)
+    
+    
+del replacement_mapping, columns_to_replace_L,columns_to_replace_P, column
+
+#%% Add a column called Sets to FL and WA
+
+""" Has the value 1 when the respondent was shown block 1 of choiccard"""
+
+def calculate_sets(row):
+    global deleted_rows
+    sum_b1 = row[['LB1C1_1', 'LB1C2_1', 'LB1C3_1', 'LB1C4_1', 'LB1C5_1', 'LB1C6_1']].sum()
+    sum_b2 = row[['LB2C1_1', 'LB2C2_1', 'LB2C3_1', 'LB2C4_1', 'LB2C5_1', 'LB2C6_1']].sum()
+
+    if sum_b1 > 0:
+        return 1
+    elif sum_b2 > 0:
+        return 2
+    else:
+        return 4
+
+L['Sets'] = L.apply(calculate_sets, axis=1)
+
+def calculate_sets(row):
+    global deleted_rows
+    sum_b1 = row[['GB1C1_1', 'GB1C2_1', 'GB1C3_1', 'GB1C4_1', 'GB1C5_1', 'GB1C6_1']].sum()
+    sum_b2 = row[['GB2C1_1', 'GB2C2_1', 'GB2C3_1', 'GB2C4_1', 'GB2C5_1', 'GB2C6_1']].sum()
+
+    if sum_b1 > 0:
+        return 1
+    elif sum_b2 > 0:
+        return 2
+    else:
+        return 4
+P['Sets'] = P.apply(calculate_sets, axis=1)
+#Checking people who chose non-dominant option
+# Replace 'Optie B' with the exact value you want to filter for
+filtered_data = P[P['GB2C2_1'] == 2]
+
+# Selecting the specified columns
+selected_columns = filtered_data[['Q23', 'Q23_3_TEXT', 'Q24', 'Q26', 'Q27', 'Q28', 'Q29', 'Q29_6_TEXT', 'Q94', 'Q3_1', 'Q3_2', 'Q3_3', 'Q3_4', 'Q3_5', 'Q3_6', 'Q3_7', 'Q3_8', 'Q3_8_TEXT', 'Q5']]
+
+# Print or use the selected columns as needed
+selected_columns.to_excel('Non-dom P.xlsx', index=False)
+#%% Checking how many people indicated 'None of the options'
+
+# Define a function to count occurrences for a DataFrame and specified columns
+def count_occurrences(df, columns_to_check):
+    # Define a dictionary to store counts for each threshold
+    counts = {}
+
+    # Iterate over the number of occurrences from 1 to 6
+    for threshold in range(1, 7):
+        # Check if at least 'threshold' columns contain the value 3
+        rows_with_threshold_or_more = df[(df[columns_to_check] == 3).sum(axis=1) >= threshold]
+        
+        # Count the number of rows
+        count_rows_with_threshold_or_more = len(rows_with_threshold_or_more)
+        
+        # Store the count for the current threshold
+        counts[threshold] = count_rows_with_threshold_or_more
+
+    return counts
+
+# Columns for dataframe L to check
+columns_L = ['LB1C1_1', 'LB1C2_1', 'LB1C3_1', 'LB1C4_1', 'LB1C5_1', 'LB1C6_1',
+             'LB2C1_1', 'LB2C2_1', 'LB2C3_1', 'LB2C4_1', 'LB2C5_1', 'LB2C6_1']
+
+# Columns for dataframe P to check
+columns_P = ['GB1C1_1', 'GB1C2_1', 'GB1C3_1', 'GB1C4_1', 'GB1C5_1', 'GB1C6_1',
+             'GB2C1_1', 'GB2C2_1', 'GB2C3_1', 'GB2C4_1', 'GB2C5_1', 'GB2C6_1']
+
+# Count occurrences for dataframe L
+counts_L = count_occurrences(L, columns_L)
+
+# Count occurrences for dataframe P
+counts_P = count_occurrences(P, columns_P)
+
+# Print the counts for dataframe L
+print("Counts for DataFrame L:")
+for threshold, count in counts_L.items():
+    print(f"Number of respondents with {threshold} or more occurrences of 'None of the options (3)' in the Laptop DCE:", count/len(L)*100)
+
+# Print the counts for dataframe P
+print("\nCounts for DataFrame P:")
+for threshold, count in counts_P.items():
+    print(f"Number of respondents with {threshold} or more occurrences of 'None of the options (3)' in the Phone DCE:", count/len(P)*100)
+#%% delete phone columns in laptop file et vice versa
+deleted_P = ['LB1C1_1', 'LB1C2_1', 'LB1C3_1', 'LB1C4_1', 'LB1C5_1', 'LB1C6_1', 'LB2C1_1', 'LB2C2_1', 'LB2C3_1', 'LB2C4_1', 'LB2C5_1', 'LB2C6_1']
+deleted_L = ['GB1C1_1', 'GB1C2_1', 'GB1C3_1', 'GB1C4_1', 'GB1C5_1', 'GB1C6_1', 'GB2C1_1', 'GB2C2_1', 'GB2C3_1', 'GB2C4_1', 'GB2C5_1', 'GB2C6_1']
+
+P = P.drop(columns=deleted_P)
+L = L.drop(columns=deleted_L)
+del deleted_P, deleted_L
+""" Deleting these columns """
+
+#columns_to_delete = ['Duration (in seconds)', 'Q2', 'Q22', 'Q5','Q31']
+#L = L.drop(columns=columns_to_delete)
+#P = P.drop(columns=columns_to_delete)
+
+#del columns_to_delete
+#%% Create 'Respondent' column
+P['Respondent'] = P.index + 1
+L['Respondent'] = L.index + 1
+P.to_excel("BEvitalise Phone_processed.xlsx", index=False)
+L.to_excel("BEvitalise Laptop_processed.xlsx", index=False)
+#%% Create the DCE dataset wih every unique Respondent (ID) repeated 18 times (3 choices per 6 cards)
+
+DCE_L = pd.DataFrame()
+repeated_ids = np.repeat(L['Respondent'], 18)
+DCE_L['Respondent'] = repeated_ids
+
+
+DCE_P = pd.DataFrame()
+repeated_ids = np.repeat(P['Respondent'], 18)
+DCE_P['Respondent'] = repeated_ids
+
+del repeated_ids 
+#%% Add OG ROW (referencing to original doc) to dataframe
+
+repeated_ids = np.repeat(L['OG_Row'], 18)
+DCE_L['OG_Row'] = repeated_ids
+
+
+repeated_ids = np.repeat(P['OG_Row'], 18)
+DCE_P['OG_Row'] = repeated_ids
+
+del repeated_ids
+#%% Alter
+""" This column has values 1, 2 and 3 relecting the possible choices"""
+
+pattern_L = [(i % 3) + 1 for i in range(len(DCE_L))]
+pattern_P = [(i % 3) + 1 for i in range(len(DCE_P))]
+DCE_L['Alter'] = pattern_L
+DCE_P['Alter'] = pattern_P
+
+del pattern_L, pattern_P
+#%% Alter3 
+""" This column has the value for the opt out option which is keeping the device at home """
+
+sequence = [0, 0, 1, 0,0, 1]
+repeated_sequence_L = sequence * (len(DCE_L) // len(sequence)) + sequence[:len(DCE_L) % len(sequence)]
+repeated_sequence_P = sequence * (len(DCE_P) // len(sequence)) + sequence[:len(DCE_P) % len(sequence)]
+DCE_L['Alter3'] = repeated_sequence_L
+DCE_P['Alter3'] = repeated_sequence_P
+del sequence, repeated_sequence_L, repeated_sequence_P
+#%% Chtaskid
+""" This column reflects the number of choice cards"""
+
+sequence_L = [i for i in range(1, len(DCE_L) // 2+2) for _ in range(3)]
+sequence_P = [i for i in range(1, len(DCE_P) // 2+2) for _ in range(3)]
+
+sequence_L = sequence_L[:len(DCE_L)]
+sequence_P = sequence_P[:len(DCE_P)]
+
+DCE_L['Chtaskid'] = sequence_L
+DCE_P['Chtaskid'] = sequence_P
+
+del sequence_L, sequence_P
+#%% Choicesets
+""" Reflects the choicecard in the set. There are 6 cards per set. """
+
+sequence = [i for i in range(1, 7) for _ in range(3)]
+repeated_sequence_L = sequence * (len(DCE_L) // len(sequence)) + sequence[:len(DCE_L) % len(sequence)]
+repeated_sequence_P = sequence * (len(DCE_P) // len(sequence)) + sequence[:len(DCE_P) % len(sequence)]
+
+DCE_L['Choicesets'] = repeated_sequence_L
+DCE_P['Choicesets'] = repeated_sequence_P
+
+DCE_L['Choicesets'] = DCE_L['Choicesets'].astype(int)
+DCE_P['Choicesets'] = DCE_P['Choicesets'].astype(int)
+
+
+del sequence, repeated_sequence_P, repeated_sequence_L
+#%% Sets
+""" This column reflects the set of cards (blocks) that the instance was shown"""
+
+DCE_L['Sets'] = 0
+
+for index, row in DCE_L.iterrows():
+    id_value = row['OG_Row']
+    sets_value = L.loc[L['OG_Row'] == id_value, 'Sets'].values[0]
+    DCE_L.at[index, 'Sets'] = sets_value
+    
+DCE_P['Sets'] = 0
+
+for index, row in DCE_P.iterrows():
+    id_value = row['OG_Row']
+    sets_value = P.loc[P['OG_Row'] == id_value, 'Sets'].values[0]
+    DCE_P.at[index, 'Sets'] = sets_value
+    
+del id_value, index, row, sets_value
+#%% Chosenalter
+
+def calculate_chosen_alter(row): 
+    set_col = f"LB{row['Sets']}C{row['Choicesets']}_1" 
+    return L.loc[L['OG_Row'] == row['OG_Row'], set_col].iloc[0] # Add Chosenalter column to 
+DCE_L['Chosenalter'] = DCE_L.apply(calculate_chosen_alter, axis=1)
+
+def calculate_chosen_alter(row): 
+    set_col = f"GB{row['Sets']}C{row['Choicesets']}_1" 
+    return P.loc[P['OG_Row'] == row['OG_Row'], set_col].iloc[0] # Add Chosenalter column to 
+DCE_P['Chosenalter'] = DCE_P.apply(calculate_chosen_alter, axis=1)
+#%% Adding the variable Choice
+
+""" Returns 1 when chosenalter is equel to alter and zero if not """
+DCE_L.insert(4, 'Choice', 0)
+DCE_P.insert(4, 'Choice', 0)
+DCE_L.loc[DCE_L['Alter'] == DCE_L['Chosenalter'], 'Choice'] = 1
+DCE_P.loc[DCE_P['Alter'] == DCE_P['Chosenalter'], 'Choice'] = 1
+attributes = pd.DataFrame(columns=[
+    'SuperMarkt', 'EStore', 'ContPark', 'SecondStore', 'DROPOFF', 'STAFF', 'DATA', 'NODATA', 'ReuseCharity', 'ReuseInd', 
+    'RECYCLAGE', 'NOINFO', 'CASH', 'VOUCHER', 'DONATION', 'NO', 'PRICE'
+])
+
+# Set 1, Choice card 1
+
+cards_1_1 = attributes.copy()
+cards_1_1.loc[len(cards_1_1)] = [0,1,0,0,1,0,1,0,1,0,0,0,0,1,0,0,10]
+cards_1_1.loc[len(cards_1_1)] = [1,0,0,0,0,1,1,0,0,0,0,1,0,0,1,0,20]
+cards_1_1.loc[len(cards_1_1)] = [0,0,0,1,0,1,1,0,0,1,0,0,1,0,0,0,5]
+cards_1_1.loc[len(cards_1_1)] = [0,1,0,0,0,1,0,1,0,0,1,0,0,0,0,1,0]
+cards_1_1.loc[len(cards_1_1)] = [0,0,0,1,0,1,0,1,1,0,0,0,1,0,0,0,20]
+cards_1_1.loc[len(cards_1_1)] = [0,0,1,0,1,0,0,1,0,1,0,0,0,1,0,0,5]
+
+
+# Set 1, Choice card 2
+
+cards_1_2 = attributes.copy()
+cards_1_2.loc[len(cards_1_2)] = [0,0,0,1,1,0,0,1,0,0,0,1,0,1,0,0,20]
+cards_1_2.loc[len(cards_1_2)] = [0,0,1,0,0,1,0,1,0,1,0,0,0,1,0,0,10]
+cards_1_2.loc[len(cards_1_2)] = [0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,20]
+cards_1_2.loc[len(cards_1_2)] = [0,1,0,0,1,0,1,0,1,0,0,0,0,1,0,0,5]
+cards_1_2.loc[len(cards_1_2)] = [0,0,1,0,1,0,1,0,0,0,0,1,1,0,0,0,5]
+cards_1_2.loc[len(cards_1_2)] = [1,0,0,0,0,1,1,0,0,0,1,0,0,0,1,0,5]
+
+# Set 2, Chocie card 1
+
+cards_2_1 = attributes.copy()
+cards_2_1.loc[len(cards_2_1)] = [0,0,1,0,0,1,0,1,0,0,0,1,0,0,0,1,0]
+cards_2_1.loc[len(cards_2_1)] = [1,0,0,0,1,0,0,1,0,0,0,1,1,0,0,0,5]
+cards_2_1.loc[len(cards_2_1)] = [0,0,0,1,1,0,1,0,1,0,0,0,0,0,1,0,5]
+cards_2_1.loc[len(cards_2_1)] = [0,1,0,0,1,0,0,1,0,0,1,0,1,0,0,0,10]
+cards_2_1.loc[len(cards_2_1)] = [0,0,1,0,1,0,1,0,0,1,0,0,0,1,0,0,20]
+cards_2_1.loc[len(cards_2_1)] = [1,0,0,0,0,1,1,0,0,0,1,0,0,0,1,0,10]
+
+# Set 2, Chocie card 2
+
+cards_2_2 = attributes.copy()
+cards_2_2.loc[len(cards_2_2)] = [1,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,10]
+cards_2_2.loc[len(cards_2_2)] = [1,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0]
+cards_2_2.loc[len(cards_2_2)] = [0,0,1,0,1,0,0,1,1,0,0,0,0,0,1,0,20]
+cards_2_2.loc[len(cards_2_2)] = [0,0,0,1,1,0,1,0,0,0,1,0,0,0,0,1,0]
+cards_2_2.loc[len(cards_2_2)] = [0,1,0,0,0,1,1,0,0,1,0,0,0,0,1,0,10]
+cards_2_2.loc[len(cards_2_2)] = [0,0,0,1,0,1,1,0,1,0,0,0,1,0,0,0,5]
+# Concatenate rows of cards_1_1 and cards_1_2 with rows of zeros in between
+matrix_data = []
+for i in range(len(cards_1_1)):
+    matrix_data.append(cards_1_1.iloc[i])
+    matrix_data.append(cards_1_2.iloc[i])
+    matrix_data.append([0]*17)  # A row with 17 zeros
+
+# Convert the list of lists to a numpy array
+matrix_set1 = np.array(matrix_data)
+print(matrix_set1)
+# Concatenate rows of cards_2_1 and cards_2_2 with rows of zeros in between
+matrix_data = []
+for i in range(len(cards_2_1)):
+    matrix_data.append(cards_2_1.iloc[i])
+    matrix_data.append(cards_2_2.iloc[i])
+    matrix_data.append([0]*17)  # A row with 17 zeros
+
+# Convert the list of lists to a numpy array
+matrix_set2 = np.array(matrix_data)
+print(matrix_set2)
+# Create a function to assign matrix values based on the 'Sets' condition
+def assign_matrix(df, matrix1, matrix2, column_names):
+    # Iterate over the DataFrame in steps of 18 rows
+    for start in range(0, len(df), 18):
+        # Determine which matrix to use based on the 'Sets' value in the first of each 18-row block
+        if df.iloc[start]['Sets'] == 1:
+            matrix_to_use = matrix1
+        elif df.iloc[start]['Sets'] == 2:
+            matrix_to_use = matrix2
+        else:
+            continue  # Skip if neither condition is met (or handle other cases)
+
+        # Assign the values from the appropriate matrix to the DataFrame
+        for row_offset in range(18):
+            df.iloc[start + row_offset, df.columns.get_loc(column_names[0]):df.columns.get_loc(column_names[-1]) + 1] = matrix_to_use[row_offset]
+
+# Example matrices (make sure these are numpy arrays with the correct shape (18, 17))
+# matrix_set1 = np.random.rand(18, 17)  # Replace with actual data
+# matrix_set2 = np.random.rand(18, 17)  # Replace with actual data
+
+# Define the column names for the attributes
+column_names = ['SuperMarkt', 'EStore', 'ContPark', 'SecondStore', 'DROPOFF', 'STAFF', 'DATA', 'NODATA', 'ReuseCharity', 'ReuseInd', 
+    'RECYCLAGE', 'NOINFO', 'CASH', 'VOUCHER', 'DONATION', 'NO', 'PRICE']
+
+# Add these columns to DCE_L and DCE_P with initial values set to zero or some other default value
+for column in column_names:
+    if column not in DCE_L.columns:
+        DCE_L[column] = 0
+    if column not in DCE_P.columns:
+        DCE_P[column] = 0
+
+# Apply the function to your DataFrames (assuming DCE_L and DCE_P are defined)
+assign_matrix(DCE_L, matrix_set1, matrix_set2, column_names)
+assign_matrix(DCE_P, matrix_set1, matrix_set2, column_names)
+#INTERACTION TERMS
+#Add Age column
+repeated_ids = np.repeat(L['Q24'], 18)
+DCE_L['Age'] = repeated_ids
+del repeated_ids
+
+repeated_ids = np.repeat(P['Q24'], 18)
+DCE_P['Age'] = repeated_ids
+del repeated_ids
+#Probeert u uw laptop meestal eerst te laten repareren als deze beschadigd is of koopt u een nieuw toestel?
+L['Q9'] = L['Q9'].replace({
+    'Ik koop meestal een nieuw toestel': 0,
+    'Ik probeer mijn laptop meestal eerst te laten repareren': 1
+})
+print((L['Q9'].value_counts()/len(L))*100)
+
+repeated_ids = np.repeat(L['Q9'], 18)
+DCE_L['Reparation'] = repeated_ids
+del repeated_ids
+
+P['Q17'] = P['Q17'].replace({
+    'Ik koop meestal een nieuw toestel': 0,
+    'Ik probeer mijn gsm meestal eerst te laten repareren': 1
+})
+
+print((P['Q17'].value_counts()/len(P))*100)
+
+repeated_ids = np.repeat(P['Q17'], 18)
+DCE_P['Reparation'] = repeated_ids
+del repeated_ids
+#Koopt u meestal een nieuwe of een tweedehands laptop?
+L['Q10'] = L['Q10'].replace({
+    'Nieuw': 0,
+    'Tweedehands': 1
+})
+
+print((L['Q10'].value_counts()/len(L))*100)
+
+repeated_ids = np.repeat(L['Q10'], 18)
+DCE_L['Secondhand'] = repeated_ids
+del repeated_ids
+
+P['Q18'] = P['Q18'].replace({
+    'Nieuw': 0,
+    'Tweedehands': 1
+})
+
+print((P['Q18'].value_counts()/len(P))*100)
+
+repeated_ids = np.repeat(P['Q18'], 18)
+DCE_P['Secondhand'] = repeated_ids
+del repeated_ids
+#Hoe vaak koopt u gemiddeld een nieuwe laptop?
+
+L['Q12'] = L['Q12'].replace({
+    'Ik weet het niet': 0,
+    'Ik krijg mijn laptop van mijn werkgever en koop de laptop later niet over': 0,
+    'Langer dan 5 jaar': 1,
+    'Elke 3 tot 5 jaar':2,
+    'Elke 2 jaar': 3,
+    'Elk jaar':4
+})
+repeated_ids = np.repeat(L['Q12'], 18)
+DCE_L['Frequency'] = repeated_ids
+del repeated_ids
+
+
+P['Q20'] = P['Q20'].replace({
+    'Ik weet het niet': 0,
+    'Ik krijg mijn gsm van mijn werkgever en koop de gsm later niet over': 0,
+    'Langer dan 5 jaar': 1,
+    'Elke 3 tot 5 jaar':2,
+    'Elke 2 jaar': 3,
+    'Elk jaar':4
+})
+repeated_ids = np.repeat(P['Q20'], 18)
+DCE_P['Frequency'] = repeated_ids
+del repeated_ids
+#Wanneer ik oude batterijen, lampen of andere elektrische of elektronische apparaten heb, breng ik deze meestal naar een recyclagepunt.
+print((L['Q39'].value_counts()/len(L))*100)
+L['Q39'] = L['Q39'].replace({
+    'Nee': 0,
+    'Ja': 1
+})
+
+repeated_ids = np.repeat(L['Q39'], 18)
+DCE_L['EcoRecycle'] = repeated_ids
+del repeated_ids
+
+print((P['Q39'].value_counts()/len(P))*100)
+P['Q39'] = P['Q39'].replace({
+    'Nee': 0,
+    'Ja': 1
+})
+
+repeated_ids = np.repeat(P['Q39'], 18)
+DCE_P['EcoRecycle'] = repeated_ids
+del repeated_ids
+#Welke van de volgende dieetkeuzes zijn op u van toepassing?
+
+answers = pd.concat([L['Q45_1'],L['Q45_2'],L['Q45_3'],L['Q45_4'],L['Q45_5'],L['Q45_6']])
+print("L:", answers.value_counts()/len(L)*100)
+
+# Iterate over rows with non-null values in column 'Q45_6_TEXT' (ECODIET)
+for index, value in L.loc[L['Q45_6_TEXT'].notnull(), 'Q45_6_TEXT'].items():
+    print("L OG Row:", L.loc[index, 'OG_Row'])
+    print(value) 
+for index, value in P.loc[P['Q45_6_TEXT'].notnull(), 'Q45_6_TEXT'].items():
+    print("P OG Row:", P.loc[index, 'OG_Row'])
+    print(value)
+#P OG Row: 191
+#Halal vlees => meat
+P.loc[P[P['OG_Row'] == 191].index, 'Q45_1'] = "Ik eet zowel dierlijke (vlees, vis) als plantaardige producten"
+P.loc[P[P['OG_Row'] == 191].index, ['Q45_6_TEXT', 'Q45_6']] = None
+P.loc[P[P['OG_Row'] == 200].index, ['Q45_3']] = None
+P.loc[P[P['OG_Row'] == 117].index, ['Q45_2']] = None
+L.loc[L[L['OG_Row'] == 142].index, ['Q45_3']] = None
+L.loc[L[L['OG_Row'] == 66].index, ['Q45_2']] = None
+
+
+# Define conditions and corresponding values for the new column
+conditions = [
+    (L['Q45_1'] == 'Ik eet zowel dierlijke (vlees, vis) als plantaardige producten'),
+    (L['Q45_2'] == 'Vegetarisch (geen vlees en vis)') |
+    (L['Q45_3'] == 'Pescotariër (vegetariër, maar ik eet vis/zeevruchten)') |
+    (L['Q45_4'] == 'Flexitariër (vooral vegetarisch, maar soms eet ik wel vlees/vis)') |
+    (L['Q45_5'] == 'Vegan (geen dierlijke producten, inclusief zuivel en eieren)')
+]
+values = [0, 1]
+
+# Create the new column 'Diet' based on conditions
+L['Diet'] = np.select(conditions, values, default=np.nan)
+repeated_ids = np.repeat(L['Diet'], 18)
+DCE_L['EcoDiet'] = repeated_ids
+del repeated_ids, conditions
+
+answers = pd.concat([P['Q45_1'],P['Q45_2'],P['Q45_3'],P['Q45_4'],P['Q45_5'],P['Q45_6']])
+print("P:", answers.value_counts()/len(P)*100)
+
+# Define conditions and corresponding values for the new column
+conditions = [
+    (P['Q45_1'] == 'Ik eet zowel dierlijke (vlees, vis) als plantaardige producten'),
+    (P['Q45_2'] == 'Vegetarisch (geen vlees en vis)') |
+    (P['Q45_3'] == 'Pescotariër (vegetariër, maar ik eet vis/zeevruchten)') |
+    (P['Q45_4'] == 'Flexitariër (vooral vegetarisch, maar soms eet ik wel vlees/vis)') |
+    (P['Q45_5'] == 'Vegan (geen dierlijke producten, inclusief zuivel en eieren)')
+]
+values = [0, 1]
+
+# Create the new column 'Diet' based on conditions
+P['Diet'] = np.select(conditions, values, default=np.nan)
+repeated_ids = np.repeat(P['Diet'], 18)
+DCE_P['EcoDiet'] = repeated_ids
+del repeated_ids, conditions
+#Bent u lid van een natuur- en milieuorganisatie of -vereniging (zoals Natuurpunt, WWF, Greenpeace…) of steunt u deze?
+print((L['Q93'].value_counts()/len(L))*100)
+L['Q93'] = L['Q93'].replace({
+    'Nee, nooit': 0,
+    'Nee, maar vroeger wel': 1,
+    'Ja': 1
+})
+
+repeated_ids = np.repeat(L['Q93'], 18)
+DCE_L['EcoEnvOrg'] = repeated_ids
+del repeated_ids
+
+print((P['Q93'].value_counts()/len(P))*100)
+P['Q93'] = P['Q93'].replace({
+    'Nee, nooit': 0,
+    'Nee, maar vroeger wel': 1,
+    'Ja': 1
+})
+
+repeated_ids = np.repeat(P['Q93'], 18)
+DCE_P['EcoEnvOrg'] = repeated_ids
+del repeated_ids
+DCE_P.to_excel("BEvitalise Phone_DCE.xlsx", index=False)
+DCE_L.to_excel("BEvitalise Laptop_DCE.xlsx", index=False)
+DCE_P.to_csv("BEvitalise Phone_DCE.csv", index=False)
+DCE_L.to_csv("BEvitalise Laptop_DCE.csv", index=False)
