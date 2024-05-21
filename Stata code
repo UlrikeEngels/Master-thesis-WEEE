@@ -1,0 +1,169 @@
+import delimited "/Users/ulke.engels/Desktop/Handelsingenieur/Master/Master 2/Master thesis/Finale resultaten/BEvitalise Laptop_DCE.csv"
+// Conditional logit model
+clogit choice alter3 estore supermarkt secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price, group(chtaskid)
+estat ic
+
+// Mixed logit model 50 draws
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price) group(chtaskid) id(respondent) nrep(50)
+estat ic
+
+// Mixed logit model 100 draws
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price) group(chtaskid) id(respondent) nrep(100)
+estat ic
+
+// Mixed logit model 200 draws
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price) group(chtaskid) id(respondent) nrep(200)
+estat ic
+
+// Mixed logit model 250 draws
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price) group(chtaskid) id(respondent) nrep(250)
+estat ic
+
+// Mixed model with interactions Secondhand
+gen secondhandalter3 = secondhand*alter3
+gen secondhandestore = secondhand*estore
+gen secondhandsupermarkt = secondhand*supermarkt
+gen secondhandsecondstore = secondhand*secondstore
+gen secondhanddata = secondhand*data
+gen secondhandreusecharity = secondhand*reusecharity
+gen secondhandreuseind = secondhand*reuseind
+gen secondhandrecyclage = secondhand*recyclage
+gen secondhanddropoff = secondhand*dropoff
+gen secondhandcash = secondhand*cash
+gen secondhandvoucher = secondhand*voucher
+gen secondhanddonation = secondhand*donation
+gen secondhandprice = secondhand*price
+
+gmnl choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price secondhandalter3 secondhandestore secondhandsupermarkt secondhandsecondstore secondhanddropoff secondhanddata secondhandreusecharity secondhandreuseind secondhandrecyclage  secondhandcash secondhandvoucher secondhanddonation secondhandprice) group(chtaskid) id(respondent) nrep(50) mixl dtype(3)
+
+// Mixed model with interactions Frequency
+gen frequencyalter3 = frequency*alter3
+gen frequencyestore = frequency*estore
+gen frequencysupermarkt = frequency*supermarkt
+gen frequencysecondstore = frequency*secondstore
+gen frequencydata = frequency*data
+gen frequencyreusecharity = frequency*reusecharity
+gen frequencyreuseind = frequency*reuseind
+gen frequencyrecyclage = frequency*recyclage
+gen frequencydropoff = frequency*dropoff
+gen frequencycash = frequency*cash
+gen frequencyvoucher = frequency*voucher
+gen frequencydonation = frequency*donation
+gen frequencyprice = frequency*price
+
+gmnl choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price frequencyalter3 frequencyestore frequencysupermarkt frequencysecondstore frequencydropoff frequencydata frequencyreusecharity frequencyreuseind frequencyrecyclage  frequencycash frequencyvoucher frequencydonation frequencyprice) group(chtaskid) id(respondent) nrep(50) mixl dtype(3)
+
+// Mixed model with interactions EcoRecycle
+gen ecorecyclealter3 = ecorecycle*alter3
+gen ecorecycleestore = ecorecycle*estore
+gen ecorecyclesupermarkt = ecorecycle*supermarkt
+gen ecorecyclesecondstore = ecorecycle*secondstore
+gen ecorecycledata = ecorecycle*data
+gen ecorecyclereusecharity = ecorecycle*reusecharity
+gen ecorecyclereuseind = ecorecycle*reuseind
+gen ecorecyclerecyclage = ecorecycle*recyclage
+gen ecorecycledropoff = ecorecycle*dropoff
+gen ecorecyclecash = ecorecycle*cash
+gen ecorecyclevoucher = ecorecycle*voucher
+gen ecorecycledonation = ecorecycle*donation
+gen ecorecycleprice = ecorecycle*price
+
+gmnl choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price ecorecyclealter3 ecorecycleestore ecorecyclesupermarkt ecorecyclesecondstore ecorecycledropoff ecorecycledata ecorecyclereusecharity ecorecyclereuseind ecorecyclerecyclage ecorecyclecash ecorecyclevoucher ecorecycledonation ecorecycleprice) group(chtaskid) id(respondent) nrep(50) mixl dtype(3)
+
+// Mixed model with interactions EcoDiet
+gen ecodietealter3 = ecodiet*alter3
+gen ecodietestore = ecodiet*estore
+gen ecodietecosupermarkt = ecodiet*supermarkt
+gen ecodietecosecondstore = ecodiet*secondstore
+gen ecodietecodata = ecodiet*data
+gen ecodietecoreusecharity = ecodiet*reusecharity
+gen ecodietecoreuseind = ecodiet*reuseind
+gen ecodietecorecyclage = ecodiet*recyclage
+gen ecodietecodropoff = ecodiet*dropoff
+gen ecodietecocash = ecodiet*cash
+gen ecodietecovoucher = ecodiet*voucher
+gen ecodietecodonation = ecodiet*donation
+gen ecodietecoprice = ecodiet*price
+
+gmnl choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price ecodietealter3 ecodietestore ecodietecosupermarkt ecodietecosecondstore ecodietecodropoff ecodietecodata ecodietecoreusecharity ecodietecoreuseind ecodietecorecyclage ecodietecocash ecodietecovoucher ecodietecodonation ecodietecoprice) group(chtaskid) id(respondent) nrep(50) mixl dtype(3)
+
+// Mixed model with interactions EcoEnvOrg
+gen ecoenvorgalter3 = ecoenvorg*alter3
+gen ecoenvorgestore = ecoenvorg*estore
+gen ecoenvorgecosupermarkt = ecoenvorg*supermarkt
+gen ecoenvorgecosecondstore = ecoenvorg*secondstore
+gen ecoenvorgecodata = ecoenvorg*data
+gen ecoenvorgecoreusecharity = ecoenvorg*reusecharity
+gen ecoenvorgecoreuseind = ecoenvorg*reuseind
+gen ecoenvorgecorecyclage = ecoenvorg*recyclage
+gen ecoenvorgecogropoff = ecoenvorg*dropoff
+gen ecoenvorgecocash = ecoenvorg*cash
+gen ecoenvorgecovoucher = ecoenvorg*voucher
+gen ecoenvorgecodonation = ecoenvorg*donation
+gen ecoenvorgecoprice = ecoenvorg*price
+
+gmnl choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price ecoenvorgalter3 ecoenvorgestore ecoenvorgecosupermarkt ecoenvorgecosecondstore ecoenvorgecogropoff ecoenvorgecodata ecoenvorgecoreusecharity ecoenvorgecoreuseind ecoenvorgecorecyclage ecoenvorgecocash ecoenvorgecovoucher ecoenvorgecodonation ecoenvorgecoprice) group(chtaskid) id(respondent) nrep(50) mixl dtype(3)
+
+// Mixed model with  significant interactions
+//Estore
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price ageestore) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//secondstore
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price reparationsecondstore	agesecondstore	frequencysecondstore) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//supermarket
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price agesupermarkt) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//data
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price ecodietecodata	agedata	ecoenvorgecodata ) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//recycle
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price frequencyrecyclage 	ecodietrecyclage  ) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//reuse ind
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price reparationreuseind  ) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//cash
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price agecash	ecorecyclecash	ecoenvorgecocash  ) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//price
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price ecoenvorgecoprice) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//alter3
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price ecorecyclealter3	agealter3	ecoenvorgalter3) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+// significant ones
+mixlogit choice, rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price  agecash  agedata ecoenvorgalter3 ecodietecorecyclage ) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+mixlogit choice, rand(alter3 supermarkt estore secondstore staff data reusecharity reuseind recyclage cash voucher donation price) group(chtaskid) id(respondent) nrep(50) 
+estat ic
+
+//Latent classes
+lclogit choice alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price,  id(respondent) group(chtaskid) ncl(2)
+
+bys `e(id)':gen first2 = _n==1
+lclogitpr cpf, cp
+egen double cpfmax = rowmax(cpf1-cpf2)
+sum cpfmax if first2,sep(0)
+
+lclogitml2 choice, ncl(2) rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price) id(respondent) group(chtaskid)
+estat ic
+
+lclogit choice alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price,  id(respondent) group(chtaskid) ncl(3)
+bys `e(id)':gen first2 = _n==1
+lclogitpr cpf, cp
+egen double cpfmax = rowmax(cpf1-cpf2)
+sum cpfmax if first2,sep(0)
+
+lclogitml2 choice, ncl(3) rand(alter3 supermarkt estore secondstore dropoff data reusecharity reuseind recyclage cash voucher donation price) id(respondent) group(chtaskid)
+estat ic
